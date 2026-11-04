@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TechDev Magazine - Especial Backend JS</title>
+  <!-- Tailwind CSS para utilidades -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome para Iconografía -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Fuentes de Google: Playfair Display (Editorial) e Inter (Lectura) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* Custom Styling - Hojas de estilo y Selectores */
+    :root {
+      --bg-dark: #0d1117;
+      --card-bg: #161b22;
+      --accent-cyan: #38bdf8;
+      --accent-green: #4ade80;
+      --accent-purple: #c084fc;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+
+    .font-serif-title {
+      font-family: 'Playfair Display', serif;
+    }
+
+    .font-mono-code {
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Estilos del Contenedor Tipo Flipbook / Paginado */
+    .magazine-viewport {
+      perspective: 1500px;
+      position: relative;
+      width: 100%;
+      min-height: calc(100vh - 80px);
+    }
+
+    .page-sheet {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      visibility: hidden;
+      transform: rotateY(-15deg) scale(0.95);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .page-sheet.active {
+      opacity: 1;
+      visibility: visible;
+      transform: rotateY(0deg) scale(1);
+      z-index: 10;
+    }
+
+    /* Efectos de columnas estilo revista */
+    .magazine-columns {
+      column-count: 1;
+      column-gap: 2rem;
+    }
+    @media (min-width: 768px) {
+      .magazine-columns {
+        column-count: 2;
+      }
+    }
+
+    /* Selectores específicos y efectos visuales */
+    .gradient-border {
+      position: relative;
+      background: linear-gradient(135deg, #1f2937, #111827);
+    }
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: linear-gradient(45deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 0.75rem;
+      z-index: -1;
+      opacity: 0.4;
+    }
+
+    .drop-cap::first-letter {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.8rem;
+      float: left;
+      line-height: 0.8;
+      padding-right: 0.75rem;
+      padding-top: 0.25rem;
+      color: var(--accent-cyan);
+      font-weight: 800;
+    }
+
+    /* Estilo del Badge de número de página */
+    .page-badge {
+      position: absolute;
+      bottom: 1rem;
+      right: 1.5rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+  <!-- BARRA DE NAVEGACIÓN Y CABECERA SUPERIOR -->
+  <header class="bg-gray-900 border-b border-gray-800 px-4 py-3 sticky top-0 z-50 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <i class="fa-solid fa-book-open text-cyan-400 text-xl"></i>
+      <span class="font-serif-title text-xl font-bold tracking-wider text-white">TECHDEV <span class="text-cyan-400 text-xs font-sans border border-cyan-400 px-1.5 py-0.5 rounded">MAGAZINE</span></span>
+    </div>
+
+    <!-- Indicador de Página Actual -->
+    <div class="text-sm text-gray-400 font-medium">
+      Página <span id="current-page-num" class="text-cyan-400 font-bold">1</span> de <span id="total-pages-num">8</span>
+    </div>
+
+    <!-- Menú Rápido de Secciones -->
+    <div class="hidden md:flex space-x-2">
+      <button onclick="goToPage(1)" class="px-2.5 py-1 text-xs rounded bg-gray-800 hover:bg-gray-700 text-gray-300">Portada</button>
+      <button onclick="goToPage(2)" class="px-2.5 py-1 text-xs rounded bg-gray-800 hover:bg-gray-700 text-gray-300">Editorial</button>
+      <button onclick="goToPage(3)" class="px-2.5 py-1 text-xs rounded bg-gray-800 hover:bg-gray-700 text-gray-300">Índice</button>
+      <button onclick="goToPage(4)" class="px-2.5 py-1 text-xs rounded bg-gray-800 hover:bg-gray-700 text-gray-300">Contenido</button>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL DE LA REVISTA (VIEWPORT) -->
+  <main class="flex-grow max-w-6xl w-full mx-auto p-4 md:p-6 relative">
+    <div class="magazine-viewport">
+
+      <!-- PÁGINA 1: PORTADA PERSONALIZADA -->
+      <section id="page-1" class="page-sheet active bg-gray-900 rounded-2xl border border-gray-800 p-6 md:p-12 overflow-hidden relative">
+        <div class="absolute -top-24 -right-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <hgroup class="mb-8 border-b border-gray-800 pb-6 relative z-10">
+          <p class="text-cyan-400 text-xs font-bold tracking-widest uppercase mb-2">Edición N° 12 — Tecnologías Web & Backend</p>
+          <h1 class="font-serif-title text-4xl md:text-6xl font-extrabold text-white leading-tight mb-3">JAVASCRIPT EN EL SERVIDOR</h1>
+          <p class="text-gray-400 text-lg md:text-xl font-light">El ecosistema backend moderno: De Node.js y Express a WebSockets y HTTP/3.</p>
+        </hgroup>
+
+        <div class="grid md:grid-cols-2 gap-8 my-auto relative z-10">
+          <div class="space-y-6">
+            <div class="bg-gray-800/60 p-5 rounded-xl border border-gray-700/50">
+              <span class="bg-purple-500/20 text-purple-300 text-xs font-semibold px-2.5 py-1 rounded">ARTÍCULO DESTACADO</span>
+              <h3 class="text-xl font-bold text-white mt-2">¿Por qué JavaScript conquistó el Backend?</h3>
+              <p class="text-gray-400 text-sm mt-2">Un análisis detallado sobre el motor V8, el Bucle de Eventos (Event Loop) e I/O no bloqueante.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 text-xs font-mono">
+              <div class="p-3 bg-gray-800/40 rounded-lg border border-gray-800">
+                <i class="fa-brands fa-node-js text-green-400 text-2xl mb-1"></i>
+                <p class="text-gray-200 font-bold">Node.js Ecosystem</p>
+                <p class="text-gray-500">Escalabilidad masiva</p>
+              </div>
+              <div class="p-3 bg-gray-800/40 rounded-lg border border-gray-800">
+                <i class="fa-solid fa-network-wired text-cyan-400 text-2xl mb-1"></i>
+                <p class="text-gray-200 font-bold">Protocolos Web</p>
+                <p class="text-gray-500">HTTP/2, HTTP/3, WS</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative flex items-center justify-center">
+            <div class="w-full h-64 md:h-full bg-gradient-to-tr from-cyan-900/30 to-purple-900/30 rounded-xl border border-cyan-500/30 flex flex-col items-center justify-center p-6 text-center">
+              <i class="fa-solid fa-server text-6xl text-cyan-400 mb-4 animate-pulse"></i>
+              <p class="font-serif-title text-2xl text-white font-bold">REVISTA DIGITAL INTERACTIVA</p>
+              <p class="text-xs text-gray-400 mt-2">Construida con HTML5 Semántico & CSS3 Avanzado</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-4 border-t border-gray-800 flex justify-between items-center text-xs text-gray-500">
+          <span>Publicación Académica / Técnica</span>
+          <span>Desarrollo Web Fullstack</span>
+        </div>
+        <span class="page-badge">Pág. 01</span>
+      </section>
+
+      <!-- PÁGINA 2: EDITORIAL -->
+      <section id="page-2" class="page-sheet bg-gray-900 rounded-2xl border border-gray-800 p-6 md:p-12 overflow-y-auto">
+        <hgroup class="mb-6 border-b border-gray-800 pb-4">
+          <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Carta de la Dirección</span>
+          <h2 class="font-serif-title text-3xl md:text-4xl font-bold text-white mt-1">EDITORIAL</h2>
+        </hgroup>
+
+        <div class="magazine-columns text-gray-300 text-sm leading-relaxed space-y-4">
+          <p class="drop-cap">
+            La evolución del desarrollo web en la última década ha transformado radicalmente el rol de JavaScript. Lo que comenzó como un lenguaje para añadir interactividad básica en el navegador, hoy en día impulsa sistemas críticos de alto rendimiento en el servidor mediante entornos de ejecución como Node.js.
+          </p>
+          <p>
+            En esta edición de <strong>TechDev Magazine</strong>, exploramos cómo la unificación del lenguaje de programación tanto en el frontend como en el backend ha optimizado el desarrollo de software, permitiendo a los equipos construir arquitecturas escalables, reactivas y de alta eficiencia.
+          </p>
+          <p>
+            Analizaremos los conceptos clave que todo desarrollador debe dominar: desde el manejo de protocolos de comunicación hasta la estructura de servidores API REST y WebSockets para comunicación en tiempo real.
+          </p>
+          <div class="p-4 bg-cyan-950/40 border-l-4 border-cyan-400 rounded-r-lg my-4 italic text-gray-300">
+            "La simplicidad de usar un solo lenguaje en toda la pila tecnológica revolucionó la velocidad con la que creamos productos digitales."
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-800 flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-300 font-bold">
+            ED
+          </div>
+          <div>
+            <p class="text-white font-bold text-sm">Equipo Editorial TechDev</p>
+            <p class="text-xs text-gray-500">Especialistas en Desarrollo Web & Backend</p>
+          </div>
+        </div>
+        <span class="page-badge">Pág. 02</span>
+      </section>
+
+      <!-- PÁGINA 3: ÍNDICE Y DIRECTORIO -->
+      <section id="page-3" class="page-sheet bg-gray-900 rounded-2xl border border-gray-800 p-6 md:p-12 overflow-y-auto">
+        <div class="grid md:grid-cols-3 gap-8">
+          <!-- Columna Índice (2/3) -->
+          <div class="md:col-span-2 space-y-6">
+            <hgroup class="border-b border-gray-800 pb-3">
+              <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Contenido</span>
+              <h2 class="font-serif-title text-3xl font-bold text-white">ÍNDICE DE CONTENIDOS</h2>
+            </hgroup>
+
+            <ul class="space-y-4">
+              <li onclick="goToPage(1)" class="p-3 bg-gray-800/40 hover:bg-gray-800 rounded-lg border border-gray-800 cursor-pointer transition flex justify-between items-center group">
+                <div>
+                  <span class="text-xs text-cyan-400 font-mono font-bold">SECCIÓN 01</span>
+                  <h4 class="text-white font-semibold group-hover:text-cyan-300">Portada Oficial & Presentación</h4>
+                </div>
+                <span class="text-gray-500 font-mono text-sm">Pág. 01</span>
+              </li>
+
+              <li onclick="goToPage(2)" class="p-3 bg-gray-800/40 hover:bg-gray-800 rounded-lg border border-gray-800 cursor-pointer transition flex justify-between items-center group">
+                <div>
+                  <span class="text-xs text-cyan-400 font-mono font-bold">SECCIÓN 02</span>
+                  <h4 class="text-white font-semibold group-hover:text-cyan-300">Editorial: La revolución del Backend JS</h4>
+                </div>
+                <span class="text-gray-500 font-mono text-sm">Pág. 02</span>
+              </li>
+
+              <li onclick="goToPage(4)" class="p-3 bg-gray-800/40 hover:bg-gray-800 rounded-lg border border-gray-800 cursor-pointer transition flex justify-between items-center group">
+                <div>
+                  <span class="text-xs text-cyan-400 font-mono font-bold">SECCIÓN 03</span>
+                  <h4 class="text-white font-semibold group-hover:text-cyan-300">Introducción al desarrollo con Node.js</h4>
+                </div>
+                <span class="text-gray-500 font-mono text-sm">Pág. 04</span>
+              </li>
+
+              <li onclick="goToPage(5)" class="p-3 bg-gray-800/40 hover:bg-gray-800 rounded-lg border border-gray-800 cursor-pointer transition flex justify-between items-center group">
+                <div>
+                  <span class="text-xs text-cyan-400 font-mono font-bold">SECCIÓN 04</span>
+                  <h4 class="text-white font-semibold group-hover:text-cyan-300">Desarrollo: Frameworks & Protocolos HTTP / WebSockets</h4>
+                </div>
+                <span class="text-gray-500 font-mono text-sm">Pág. 05</span>
+              </li>
+
+              <li onclick="goToPage(6)" class="p-3 bg-gray-800/40 hover:bg-gray-800 rounded-lg border border-gray-800 cursor-pointer transition flex justify-between items-center group">
+                <div>
+                  <span class="text-xs text-cyan-400 font-mono font-bold">SECCIÓN 05</span>
+                  <h4 class="text-white font-semibold group-hover:text-cyan-300">Conclusiones Técnicas</h4>
+                </div>
+                <span class="text-gray-500 font-mono text-sm">Pág. 06</span>
+              </li>
+
+              <li onclick="goToPage(7)" class="p-3 bg-gray-800/40 hover:bg-gray-800 rounded-lg border border-gray-800 cursor-pointer transition flex justify-between items-center group">
+                <div>
+                  <span class="text-xs text-cyan-400 font-mono font-bold">SECCIÓN 06</span>
+                  <h4 class="text-white font-semibold group-hover:text-cyan-300">Créditos & Contraportada</h4>
+                </div>
+                <span class="text-gray-500 font-mono text-sm">Pág. 07</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Columna Directorio (1/3) -->
+          <div class="bg-gray-800/30 p-5 rounded-xl border border-gray-800 space-y-4">
+            <hgroup class="border-b border-gray-700 pb-2">
+              <h3 class="font-serif-title text-xl font-bold text-white">DIRECTORIO</h3>
+            </hgroup>
+
+            <div class="text-xs space-y-3 text-gray-300">
+              <div>
+                <p class="text-gray-500 font-bold uppercase">Director de Publicación</p>
+                <p class="font-medium text-white">Estudiante / Desarrollador Web</p>
+              </div>
+              <div>
+                <p class="text-gray-500 font-bold uppercase">Edición Téchnica & Código</p>
+                <p class="font-medium text-white">Módulo de Backend Javascript</p>
+              </div>
+              <div>
+                <p class="text-gray-500 font-bold uppercase">Diseño & Maquetación</p>
+                <p class="font-medium text-white">HTML5 Semántico + CSS Grid/Flexbox</p>
+              </div>
+              <div>
+                <p class="text-gray-500 font-bold uppercase">Contacto / Web</p>
+                <p class="font-mono text-cyan-400">dev@revista-ejemplo.com</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="page-badge">Pág. 03</span>
+      </section>
+
+      <!-- PÁGINA 4: CONTENIDO - INTRODUCCIÓN -->
+      <section id="page-4" class="page-sheet bg-gray-900 rounded-2xl border border-gray-800 p-6 md:p-12 overflow-y-auto">
+        <hgroup class="mb-6 border-b border-gray-800 pb-4">
+          <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Contenido — Parte I</span>
+          <h2 class="font-serif-title text-3xl md:text-4xl font-bold text-white mt-1">INTRODUCCIÓN AL BACKEND CON JAVASCRIPT</h2>
+        </hgroup>
+
+        <div class="space-y-6 text-gray-300 text-sm leading-relaxed">
+          <p>
+            Tradicionalmente, el desarrollo backend estaba dominado por lenguajes como Java, PHP o Python. Sin embargo, en 2009 Ryan Dahl presentó <strong>Node.js</strong>, cambiando radicalmente el paradigma al llevar el motor V8 de Google Chrome al servidor.
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-6 my-6">
+            <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+              <h4 class="font-bold text-cyan-400 text-base mb-2"><i class="fa-solid fa-bolt mr-2"></i> Event Loop (Bucle de Eventos)</h4>
+              <p class="text-xs text-gray-400">Permite procesar miles de conexiones concurrentes utilizando un solo hilo mediante operaciones I/O asíncronas no bloqueantes.</p>
+            </div>
+
+            <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+              <h4 class="font-bold text-green-400 text-base mb-2"><i class="fa-solid fa-cubes mr-2"></i> Ecosistema NPM</h4>
+              <p class="text-xs text-gray-400">El registro de software más grande del mundo, facilitando la integración de librerías y módulos con un solo comando.</p>
+            </div>
+          </div>
+
+          <p>
+            Esta arquitectura orientada a eventos resulta ideal para aplicaciones intensivas en I/O, como servicios de chat en tiempo real, plataformas de streaming y APIs RESTful de alta velocidad.
+          </p>
+        </div>
+        <span class="page-badge">Pág. 04</span>
+      </section>
+
+      <!-- PÁGINA 5: CONTENIDO - DESARROLLO -->
+      <section id="page-5" class="page-sheet bg-gray-900 rounded-2xl border border-gray-800 p-6 md:p-12 overflow-y-auto">
+        <hgroup class="mb-6 border-b border-gray-800 pb-4">
+          <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Contenido — Parte II</span>
+          <h2 class="font-serif-title text-3xl md:text-4xl font-bold text-white mt-1">FRAMEWORKS Y PROTOCOLOS DE COMUNICACIÓN</h2>
+        </hgroup>
+
+        <div class="space-y-6 text-gray-300 text-sm">
+          <p>
+            Para construir aplicaciones robustas en el backend, los desarrolladores se apoyan en frameworks de ruteo y en el manejo de diferentes protocolos de red:
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-6">
+            <!-- Express.js & HTTP -->
+            <div class="bg-gray-800/40 p-5 rounded-xl border border-gray-800 space-y-3">
+              <span class="px-2 py-0.5 bg-blue-500/20 text-blue-300 rounded text-xs font-mono font-bold">HTTP / REST</span>
+              <h3 class="text-white font-bold text-lg">Express.js & Arquitectura REST</h3>
+              <p class="text-xs text-gray-400">
+                Express es el framework minimalista estándar para Node.js. Facilita la creación de endpoints HTTP mediante métodos estándar (GET, POST, PUT, DELETE).
+              </p>
+              <div class="bg-gray-950 p-3 rounded font-mono text-xs text-green-400 overflow-x-auto">
+                app.get('/api/v1/recursos', (req, res) => {<br>
+                &nbsp;&nbsp;res.json({ status: 'OK' });<br>
+                });
+              </div>
+            </div>
+
+            <!-- WebSockets -->
+            <div class="bg-gray-800/40 p-5 rounded-xl border border-gray-800 space-y-3">
+              <span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded text-xs font-mono font-bold">WS / Real-Time</span>
+              <h3 class="text-white font-bold text-lg">WebSockets (Socket.io)</h3>
+              <p class="text-xs text-gray-400">
+                A diferencia del protocolo HTTP tradicional basado en petición-respuesta, WebSockets permite una comunicación dúplex completa (bi-direccional) en tiempo real.
+              </p>
+              <div class="bg-gray-950 p-3 rounded font-mono text-xs text-cyan-400 overflow-x-auto">
+                io.on('connection', (socket) => {<br>
+                &nbsp;&nbsp;socket.emit('mensaje', 'Bienvenido');<br>
+                });
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="page-badge">Pág. 05</span>
+      </section>
+
+      <!-- PÁGINA 6: CONTENIDO - CONCLUSIONES -->
+      <section id="page-6" class="page-sheet bg-gray-900 rounded-2xl border border-gray-800 p-6 md:p-12 overflow-y-auto">
+        <hgroup class="mb-6 border-b border-gray-800 pb-4">
+          <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Contenido — Parte III</span>
+          <h2 class="font-serif-title text-3xl md:text-4xl font-bold text-white mt-1">CONCLUSIONES TÉCNICAS</h2>
+        </hgroup>
+
+        <div class="space-y-6 text-gray-300 text-sm leading-relaxed">
+          <div class="p-6 bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl border border-gray-700 space-y-4">
+            <h3 class="text-lg font-bold text-white flex items-center">
+              <i class="fa-solid fa-check-circle text-green-400 mr-2"></i> Eficiencia y Rendimiento
+            </h3>
+            <p>
+              El modelo asíncrono no bloqueante convierte a JavaScript en una opción sumamente eficiente para servicios con alto volumen de peticiones simultáneas, optimizando el uso de CPU y memoria.
+            </p>
+          </div>
+
+          <div class="p-6 bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl border border-gray-700 space-y-4">
+            <h3 class="text-lg font-bold text-white flex items-center">
+              <i class="fa-solid fa-code text-cyan-400 mr-2"></i> Unificación de Lenguaje (Isomórfico)
+            </h3>
+            <p>
+              Poder compartir modelos de datos, validaciones y utilidades de código entre el navegador y el servidor reduce significativamente la curva de aprendizaje y la duplicidad de desarrollo.
+            </p>
+          </div>
+
+          <div class="p-6 bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl border border-gray-700 space-y-4">
+            <h3 class="text-lg font-bold text-white flex items-center">
+              <i class="fa-solid fa-layer-group text-purple-400 mr-2"></i> Futuro del Ecosistema
+            </h3>
+            <p>
+              Entornos modernos como Deno y Bun continúan perfeccionando este paradigma, mejorando la seguridad, la velocidad de ejecución y el soporte nativo para TypeScript.
+            </p>
+          </div>
+        </div>
+        <span class="page-badge">Pág. 06</span>
+      </section>
+
+      <!-- PÁGINA 7: CRÉDITOS Y CONTRAPORTADA -->
+      <section id="page-7" class="page-sheet bg-gray-950 rounded-2xl border border-gray-800 p-6 md:p-12 overflow-y-auto flex flex-col justify-between">
+        <div>
+          <hgroup class="mb-6 border-b border-gray-800 pb-4">
+            <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Cierre de Edición</span>
+            <h2 class="font-serif-title text-3xl font-bold text-white mt-1">CRÉDITOS DE LA PUBLICACIÓN</h2>
+          </hgroup>
+
+          <div class="grid md:grid-cols-2 gap-6 text-xs text-gray-400">
+            <div class="space-y-3 bg-gray-900 p-4 rounded-lg border border-gray-800">
+              <h4 class="text-white font-bold text-sm">Tecnologías de Maquetación Web</h4>
+              <p>• HTML5 Semántico (&lt;section&gt;, &lt;hgroup&gt;)</p>
+              <p>• CSS3 Avanzado (Flexbox, Grid, CSS Variables)</p>
+              <p>• Tailwind CSS Framework</p>
+              <p>• Javascript Interactivo para Navegación</p>
+            </div>
+
+            <div class="space-y-3 bg-gray-900 p-4 rounded-lg border border-gray-800">
+              <h4 class="text-white font-bold text-sm">Información Académica</h4>
+              <p>• <strong>Módulo:</strong> Desarrollo Web & Tecnologías Backend</p>
+              <p>• <strong>Tema:</strong> Servidores en Javascript & Protocolos</p>
+              <p>• <strong>Formato:</strong> Revista Digital Interactiva</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center my-8 p-6 bg-gradient-to-tr from-cyan-950 to-purple-950 rounded-xl border border-gray-800">
+          <i class="fa-solid fa-code text-4xl text-cyan-400 mb-3"></i>
+          <h3 class="font-serif-title text-2xl font-bold text-white">¡GRACIAS POR LEER!</h3>
+          <p class="text-xs text-gray-400 mt-1">TechDev Magazine — Edición de Tecnologías Web</p>
+        </div>
+
+        <div class="border-t border-gray-800 pt-4 flex justify-between items-center text-xs text-gray-600">
+          <span>© 2026 TechDev Magazine</span>
+          <span>Todos los derechos reservados</span>
+        </div>
+        <span class="page-badge">Pág. 07</span>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- CONTROLES FLOTANTES DE NAVEGACIÓN (INFERIOR) -->
+  <footer class="bg-gray-900/90 backdrop-blur border-t border-gray-800 p-4 sticky bottom-0 z-50">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <button onclick="prevPage()" id="btn-prev" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm font-semibold transition flex items-center space-x-2 disabled:opacity-30">
+        <i class="fa-solid fa-chevron-left"></i>
+        <span>Anterior</span>
+      </button>
+
+      <!-- Puntos de Navegación -->
+      <div class="flex space-x-2" id="dots-container"></div>
+
+      <button onclick="nextPage()" id="btn-next" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-sm font-semibold transition flex items-center space-x-2">
+        <span>Siguiente</span>
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  </footer>
+
+  <!-- SCRIPT DE INTERACTIVIDAD DE LA REVISTA -->
+  <script>
+    let currentPage = 1;
+    const totalPages = 7;
+
+    document.getElementById('total-pages-num').textContent = totalPages;
+
+    // Inicializar Puntos de Navegación
+    const dotsContainer = document.getElementById('dots-container');
+    for (let i = 1; i <= totalPages; i++) {
+      const dot = document.createElement('button');
+      dot.className = `w-2.5 h-2.5 rounded-full transition-all ${i === 1 ? 'bg-cyan-400 w-6' : 'bg-gray-700'}`;
+      dot.id = `dot-${i}`;
+      dot.onclick = () => goToPage(i);
+      dotsContainer.appendChild(dot);
+    }
+
+    function updatePageVisibility() {
+      // Ocultar todas las páginas
+      for (let i = 1; i <= totalPages; i++) {
+        const page = document.getElementById(`page-${i}`);
+        const dot = document.getElementById(`dot-${i}`);
+        if (page) {
+          page.classList.remove('active');
+        }
+        if (dot) {
+          dot.className = `w-2.5 h-2.5 rounded-full transition-all ${i === currentPage ? 'bg-cyan-400 w-6' : 'bg-gray-700'}`;
+        }
+      }
+
+      // Mostrar página activa
+      const activePage = document.getElementById(`page-${currentPage}`);
+      if (activePage) {
+        activePage.classList.add('active');
+      }
+
+      // Actualizar contador
+      document.getElementById('current-page-num').textContent = currentPage;
+
+      // Estado de botones
+      document.getElementById('btn-prev').disabled = currentPage === 1;
+      document.getElementById('btn-next').disabled = currentPage === totalPages;
+    }
+
+    function nextPage() {
+      if (currentPage < totalPages) {
+        currentPage++;
+        updatePageVisibility();
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        updatePageVisibility();
+      }
+    }
+
+    function goToPage(pageNumber) {
+      if (pageNumber >= 1 && pageNumber <= totalPages) {
+        currentPage = pageNumber;
+        updatePageVisibility();
+      }
+    }
+
+    // Navegación con Teclado (Flechas Izquierda / Derecha)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') nextPage();
+      if (e.key === 'ArrowLeft') prevPage();
+    });
+  </script>
+</body>
+</html>
